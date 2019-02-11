@@ -1,0 +1,15 @@
+{
+    "name": "eivitskiy/zennex-test-work",
+    "description": "Test work for the post of PHP-developer",
+    "type": "project",
+    "minimum-stability": "dev",
+    "require": {
+      "php": "^7.2"
+    },
+    "autoload": {
+      "psr-4": {
+        "app\\": "app/",
+        "core\\": "core/"
+      }
+    }
+}
