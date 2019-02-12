@@ -1,0 +1,92 @@
+html, body {
+    color: #636b6f;
+    margin: 0;
+}
+
+ul, li {
+    margin: 0;
+    padding: 0;
+}
+
+/* контент */
+.content div {
+    margin: 0;
+    padding: 0;
+}
+
+/* список пользователей */
+.user-list {
+    background: lightgray;
+    display: inline-block;
+    height: 100vh;
+    left: 0;
+    min-width: 150px;
+    overflow-y: scroll;
+    position: absolute;
+    top: 0;
+    width: 15%;
+}
+
+.user-list li {
+    list-style-type: none;
+    display: block;
+    padding: 5px 0 5px 15px;
+}
+
+.user-list li:hover {
+    background: darkgray;
+}
+
+/**************************************/
+
+/* чат */
+.chat {
+    background: whitesmoke;
+    display: inline-block;
+    height: 100vh;
+    min-width: 650px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 85%;
+}
+
+.message-history {
+    height: calc(100vh - 30px);
+    overflow-y: scroll;
+}
+
+.message-history li {
+    list-style-type: none;
+    display: block;
+    padding: 5px 0 5px 15px;
+}
+
+.message-history li:hover {
+    background: ghostwhite;
+}
+
+.message-history span.message-title {
+    font-weight: bold;
+}
+
+.message-history span.message-content {
+    /**/
+}
+
+.message-history span.message-attachments {
+    display: block;
+}
+
+.message-attachments img {
+    max-height: 120px;
+    max-width: 240px;
+}
+
+.message-input {
+    bottom: 0;
+    height: 30px;
+    position: absolute;
+    right: 0;
+    width: 100%;
+}
