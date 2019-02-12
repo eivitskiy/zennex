@@ -23,7 +23,7 @@ class DB
         return $result;
     }
 
-    public function execute($query, array $params = null)
+    public function select($query, array $params = null)
     {
 
         if (is_null($params)) {
@@ -35,5 +35,10 @@ class DB
         $stmt->execute($params);
 
         return $stmt->fetchAll();
+    }
+
+    public function insert($query)
+    {
+        return (bool)$this->pdo->exec($query);
     }
 }
