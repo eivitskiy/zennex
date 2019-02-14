@@ -28,13 +28,11 @@ class DB
 
         if (is_null($params)) {
             $stmt = $this->pdo->query($query);
-
             return $stmt->fetchAll(\PDO::FETCH_ASSOC);
         }
         $stmt = $this->pdo->prepare($query);
 
         $stmt->execute($params);
-
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 

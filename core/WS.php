@@ -360,6 +360,8 @@ class WS
         $message = json_decode($this->decode($data)['payload']);
 
         $cookies = $this->getCookieArray($this->connectionsInfo[intval($connect)]['Cookie']);
+        $u = new User();
+        $user = $u->getByUsername($cookies['username']);
 
         if($message) {
             switch($message->type) {
@@ -371,13 +373,14 @@ class WS
                     }
                     break;
                 case 'message':
-                    $u = new User();
-                    $user = $u->getByUsername($cookies['username']);
-
                     $this->message($message, $user);
                     break;
                 case 'like':
                     $this->like($message);
+                    break;
+                case 'remove':
+
+                    $this->remove($message, $user);
                     break;
             }
         } else {
@@ -415,6 +418,28 @@ class WS
 
         foreach($this->connections as $connection) {
             fwrite($connection, $this->encode(json_encode($message)));
+        }
+    }
+
+    private function remove($message, $user)
+    {
+        $m = new Message();
+
+        $datetime = new \DateTime();
+
+        $msg = $m->find($message->message_id);
+
+        if($user['id'] == $msg['author_id']) {
+            $message = $m->update($msg['id'], [
+                'deleted_at' => $datetime->format('Y-m-d H:i:s')
+            ]);
+            $message['type'] = 'removed';
+
+            foreach ($this->connections as $connection) {
+                fwrite($connection, $this->encode(json_encode($message)));
+            }
+        } else {
+            new \Exception('Кто-то пытается удалить не своё сообщение!');
         }
     }
 }

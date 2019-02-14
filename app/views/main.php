@@ -16,9 +16,14 @@
                         <span class="message-content">
                             <?php echo "{$message['content']}" ?>
                         </span>
-                        <span class="message-likes" data-message-id="<?php echo $message['id'] ?>">
+                        <span class="message-likes">
                             🖤 <small class="like-count"><?php echo $message['likes'] ?></small>
                         </span>
+                        <?php if(isset($_COOKIE['username']) && $_COOKIE['username'] == $message['author']['username']): ?>
+                            <span class="message-remove">
+                                ❌
+                            </span>
+                        <?php endif ?>
                         <?php if(isset($message['attachments'])): ?>
                         <span class="message-attachments">
                             <?php foreach($message['attachments'] as $attachment): ?>

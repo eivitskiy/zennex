@@ -59,7 +59,7 @@ ul, li {
 .message-history li {
     list-style-type: none;
     display: block;
-    padding: 5px 0 5px 15px;
+    padding: 5px 0 5px 25px;
 }
 
 .message-history li:hover {
@@ -74,6 +74,13 @@ ul, li {
     cursor: pointer;
     float: right;
     width: 100px;
+}
+
+.message-history span.message-remove {
+    cursor: pointer;
+    float: left;
+    left: 5px;
+    position:absolute;
 }
 
 .message-history span.message-content {

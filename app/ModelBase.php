@@ -29,7 +29,7 @@ abstract class ModelBase
         $values = array_values($data);
 
         $columns_str = implode(', ', $columns);
-        $values_str = "'".implode("', '", $values)."'";
+        $values_str = "'" . implode("', '", $values) . "'";
 
         $query = "INSERT INTO {$this->table} ($columns_str) VALUES ($values_str)";
 
@@ -40,7 +40,7 @@ abstract class ModelBase
     {
         $updated_data = [];
 
-        foreach($data as $column => $value) {
+        foreach ($data as $column => $value) {
             $updated_data[] = "{$column} = '{$value}'";
         }
 
@@ -48,7 +48,7 @@ abstract class ModelBase
 
         $query = "UPDATE {$this->table} SET {$updated_data_str} WHERE id = {$id}";
 
-        if($this->db->update($query)) {
+        if ($this->db->update($query)) {
             return $this->find($id);
         } else {
             new \Exception('Что-то пошло не так');
@@ -68,7 +68,11 @@ abstract class ModelBase
 
     public function getLast($order = 'created_at', $limit = 10, $sort = 'ASC')
     {
-        $query = "SELECT * FROM (SELECT * FROM messages ORDER BY {$order} DESC LIMIT {$limit}) AS subquery ORDER BY {$order} {$sort}";
+        $query = "
+          SELECT * FROM (
+            SELECT * FROM messages WHERE deleted_at IS NULL ORDER BY {$order} DESC LIMIT {$limit}
+          ) AS subquery ORDER BY {$order} {$sort}
+        ";
 
         return $this->db->select($query);
     }

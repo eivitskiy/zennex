@@ -23,7 +23,12 @@
 
         let likes_elements = document.getElementsByClassName('message-likes');
         for(let i = 0; i < likes_elements.length; i++) {
-            likes_elements[i].onclick = toLike;
+            likes_elements[i].onclick = toLikeMsg;
+        }
+
+        let remove_elements = document.getElementsByClassName('message-remove');
+        for(let i = 0; i < remove_elements.length; i++) {
+            remove_elements[i].onclick = removeMsg;
         }
     };
 
@@ -55,6 +60,7 @@
         let span_title = document.createElement('span'),
             span_content = document.createElement('span'),
             span_likes = document.createElement('span'),
+            span_remove = document.createElement('span'),
             span_attachments = document.createElement('span');
 
         span_title.className += 'message-title';
@@ -65,13 +71,20 @@
 
         span_likes.className += 'message-likes';
         span_likes.innerHTML = '🖤 <small class="like-count">'+message.likes+'</small>';
-        span_likes.onclick = toLike;
+        span_likes.onclick = toLikeMsg;
 
         li.setAttribute('data-message-id', message.id);
 
         li.appendChild(span_title);
         li.appendChild(span_content);
         li.appendChild(span_likes);
+
+        if(message.author.username == getCookie('username')) {
+            span_remove.className += 'message-remove';
+            span_remove.innerHTML = '❌';
+            span_remove.onclick = removeMsg;
+            li.appendChild(span_remove);
+        }
 
         if(message.attachments !== undefined) {
             span_attachments.className += 'message-attachments';
@@ -100,9 +113,16 @@
         li.remove();
     }
 
-    function toLike() {
+    function toLikeMsg() {
         socket.send(JSON.stringify({
             type: 'like',
+            message_id: this.parentElement.getAttribute('data-message-id')
+        }));
+    }
+
+    function removeMsg() {
+        socket.send(JSON.stringify({
+            type: 'remove',
             message_id: this.parentElement.getAttribute('data-message-id')
         }));
     }
@@ -110,6 +130,11 @@
     function liked(message) {
         let span_liked = document.querySelectorAll("[data-message-id='"+message.id+"'] > span.message-likes > small.like-count")[0];
         span_liked.innerHTML = message.likes;
+    }
+
+    function removed(message) {
+        let span_removed = document.querySelectorAll("[data-message-id='"+message.id+"']")[0];
+        span_removed.innerHTML = 'Сообщение было удалено';
     }
 
     function changeUsername() {
@@ -138,6 +163,9 @@
                 break;
             case 'liked':
                 liked(message);
+                break;
+            case 'removed':
+                removed(message);
                 break;
             case 'changeUsername':
                 changeUsername();
