@@ -73,7 +73,6 @@ ul, li {
 .message-history span.message-likes {
     cursor: pointer;
     float: right;
-    /*margin-right: 15px;*/
     width: 100px;
 }
 
@@ -100,5 +99,5 @@ ul, li {
 
 #message-content {
     margin-left: 15px;
-    width: 80%;
+    width: 60%;
 }

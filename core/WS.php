@@ -3,6 +3,7 @@
 namespace core;
 
 use app\models\Message;
+use app\models\User;
 
 class WS
 {
@@ -53,8 +54,6 @@ class WS
                     unset($this->connections[array_search($connect, $this->connections)]);      //удаляем подключение из списка
                     unset($this->users[$this->connectionsInfo[intval($connect)]['Sec-WebSocket-Key']]); // удаляем пользователя из списка
                     fclose($connect);
-
-                    var_dump($this->users);
                     continue;
                 }
 
@@ -271,6 +270,30 @@ class WS
         return $cookies;
     }
 
+    private function checkUser($cookies)
+    {
+        $u = new User();
+
+        var_dump($cookies);
+
+        $status = $u->existsUser($cookies['username'], $cookies['token']);
+
+        var_dump($status);
+
+        if($status === null) {
+            $user_id = $u->create([
+                'username' => $cookies['username'],
+                'token' => $cookies['token']
+            ]);
+
+            return true;
+        } elseif ($status === false) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     /*******************************************************************************************************************
     |* пользовательские сценарии:
     |******************************************************************************************************************/
@@ -278,39 +301,45 @@ class WS
     {
         $cookies = $this->getCookieArray($info['Cookie']);
 
-        $username = $cookies['username'];
+        if(!$this->checkUser($cookies)) {
+            fwrite($connect, $this->encode(json_encode([
+                'type' => 'changeUsername'
+            ])));
+        } else {
+            $username = $cookies['username'];
 
-        $this->users[$info['Sec-WebSocket-Key']] = $username;
+            $this->users[$info['Sec-WebSocket-Key']] = $username;
 
-        foreach($this->connections as $connection) {
-            if($connection == $connect) {
-                fwrite($connection, $this->encode(json_encode([
-                    'type' => 'info',
-                    'content' => 'Соединение установлено'
-                ])));
+            foreach ($this->connections as $connection) {
+                if ($connection == $connect) {
+                    fwrite($connection, $this->encode(json_encode([
+                        'type' => 'info',
+                        'content' => 'Соединение установлено'
+                    ])));
 
-                foreach($this->users as $id => $user) {
+                    foreach ($this->users as $id => $user) {
+                        fwrite($connection, $this->encode(json_encode([
+                            'type' => 'addUser',
+                            'id' => $id,
+                            'username' => $user,
+                        ])));
+                    }
+                } else {
+                    fwrite($connection, $this->encode(json_encode([
+                        'type' => 'info',
+                        'content' => "Пользователь '{$username}' присоединился к чату"
+                    ])));
+                    // новый пользователь в чате
                     fwrite($connection, $this->encode(json_encode([
                         'type' => 'addUser',
-                        'id' => $id,
-                        'username' => $user,
+                        'id' => $info['Sec-WebSocket-Key'],
+                        'username' => $username,
                     ])));
                 }
-            } else {
-                fwrite($connection, $this->encode(json_encode([
-                    'type' => 'info',
-                    'content' => "Пользователь '{$username}' присоединился к чату"
-                ])));
-                // новый пользователь в чате
-                fwrite($connection, $this->encode(json_encode([
-                    'type' => 'addUser',
-                    'id' => $info['Sec-WebSocket-Key'],
-                    'username' => $username,
-                ])));
             }
         }
 
-        echo "opened for " . $info['Sec-WebSocket-Key'] . ' -> ' . $username . PHP_EOL;
+        echo "opened for " . $info['Sec-WebSocket-Key'] . PHP_EOL;
     }
 
     private function onClose($connect)
@@ -330,11 +359,22 @@ class WS
     {
         $message = json_decode($this->decode($data)['payload']);
 
+        $cookies = $this->getCookieArray($this->connectionsInfo[intval($connect)]['Cookie']);
+
         if($message) {
-            var_dump($message);
             switch($message->type) {
+                case 'newUsername':
+                    if(!$this->checkUser($cookies)) {
+                        fwrite($connect, $this->encode(json_encode([
+                            'type' => 'changeUsername'
+                        ])));
+                    }
+                    break;
                 case 'message':
-                    $this->message($message);
+                    $u = new User();
+                    $user = $u->getByUsername($cookies['username']);
+
+                    $this->message($message, $user);
                     break;
                 case 'like':
                     $this->like($message);
@@ -345,16 +385,17 @@ class WS
         }
     }
 
-    private function message($message)
+    private function message($message, $user)
     {
         $m = new Message();
 
         $m_id = $m->create([
             'content' => $message->content,
-            'author' => $message->author
+            'author_id' => $user['id']
         ]);
 
         $message = $m->find($m_id);
+        $message['author'] = $user;
         $message['type'] = 'message';
 
         foreach($this->connections as $connection) {

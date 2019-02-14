@@ -13,7 +13,6 @@
 
         document.getElementById("message-send").onclick = function () {
             socket.send(JSON.stringify({
-                author: 1,
                 type: 'message',
                 content: document.getElementById("message-content").value
             }));
@@ -21,20 +20,11 @@
             document.getElementById("message-content").value = null;
         };
 
-        // document.getElementsByClassName('message-likes').click = toLike;
-
-
 
         let likes_elements = document.getElementsByClassName('message-likes');
         for(let i = 0; i < likes_elements.length; i++) {
             likes_elements[i].onclick = toLike;
         }
-
-
-
-        // setCookie('username', "", {
-        //     expires: -1
-        // });
     };
 
     function getCookie(name) {
@@ -44,41 +34,12 @@
         return matches ? decodeURIComponent(matches[1]) : false;
     }
 
-    // function setCookie(name, value, options) {
-    //     options = options || {};
-    //
-    //     let expires = options.expires;
-    //
-    //     if (typeof expires == "number" && expires) {
-    //         let d = new Date();
-    //         d.setTime(d.getTime() + expires * 1000);
-    //         expires = options.expires = d;
-    //     }
-    //     if (expires && expires.toUTCString) {
-    //         options.expires = expires.toUTCString();
-    //     }
-    //
-    //     value = encodeURIComponent(value);
-    //
-    //     let updatedCookie = name + "=" + value;
-    //
-    //     for (let propName in options) {
-    //         updatedCookie += "; " + propName;
-    //         let propValue = options[propName];
-    //         if (propValue !== true) {
-    //             updatedCookie += "=" + propValue;
-    //         }
-    //     }
-    //
-    //     document.cookie = updatedCookie;
-    // }
-
     function checkNickname() {
         if(!getCookie('username')) {
             let username;
             do {
                 username = prompt('Укажите ваш никнейм (не менее 5 символов)')
-            } while(username.length < 5);
+            } while(username && username.length < 5);
             document.cookie = "username=" + username;
         }
     }
@@ -97,7 +58,7 @@
             span_attachments = document.createElement('span');
 
         span_title.className += 'message-title';
-        span_title.innerHTML = message.created_at + ' ' + message.author + ': ';
+        span_title.innerHTML = message.created_at + ' ' + message.author.username + ': ';
 
         span_content.className += 'message-content';
         span_content.innerHTML = message.content;
@@ -147,10 +108,19 @@
     }
 
     function liked(message) {
-        console.log(message);
         let span_liked = document.querySelectorAll("[data-message-id='"+message.id+"'] > span.message-likes > small.like-count")[0];
-        console.log(span_liked);
         span_liked.innerHTML = message.likes;
+    }
+
+    function changeUsername() {
+        let username;
+        do {
+            username = prompt('Этот никнейм уже занят\nУкажите другой никнейм (не менее 5 символов)')
+        } while(username && username.length < 5);
+
+        document.cookie = "username="+username;
+
+        location.reload();
     }
 
     function messageReceived(e) {
@@ -169,6 +139,9 @@
             case 'liked':
                 liked(message);
                 break;
+            case 'changeUsername':
+                changeUsername();
+                break;
             case 'info':
                 console.info(message.content);
                 break;
@@ -186,7 +159,6 @@
         // ---- onload event ----
         load : function () {
             window.addEventListener('load', function () {
-                console.log('load', (new Date()).toTimeString());
                 init();
             }, false);
         }

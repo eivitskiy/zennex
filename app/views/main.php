@@ -11,7 +11,7 @@
                 <?php foreach($messages as $message): ?>
                     <li data-message-id="<?php echo $message['id'] ?>">
                         <span class="message-title">
-                            <?php echo "{$message['created_at']} {$message['author']}:" ?>
+                            <?php echo "{$message['created_at']} {$message['author']['username']}:" ?>
                         </span>
                         <span class="message-content">
                             <?php echo "{$message['content']}" ?>

@@ -4,79 +4,41 @@ namespace app\controllers;
 
 use app\ControllerBase;
 use app\models\Message;
+use app\models\User;
 
 class MainController extends ControllerBase
 {
     public function index()
     {
-        $users = [
-            ['name' => "Вася"],
-            ['name' => "Таня"],
-            ['name' => "Петя"],
-            ['name' => "Маша"],
-            ['name' => "Катя"],
-            ['name' => "Антон"],
-            ['name' => "Игорь"],
-            ['name' => "Федя"],
-            ['name' => "Лёха"],
-            ['name' => "Гена"],
-            ['name' => "Миша"],
-            ['name' => "Артур"],
-            ['name' => "Серёга"],
-            ['name' => "Настя"],
-            ['name' => "Алёна"],
-        ];
-
-//        $messages = [
-//            [
-//                'created_at' => '2018-02-12 11:04:12',
-//                'content' => 'Всем приветики в этом чатике',
-//                'author' => "Миха"
-//            ],
-//            [
-//                'created_at' => '2018-02-12 11:05:01',
-//                'content' => 'Здоров',
-//                'author' => "Алёша"
-//            ],
-//            [
-//                'created_at' => '2018-02-12 11:05:49',
-//                'content' => 'Хаюшки',
-//                'author' => "Оксана",
-//                'attachments' => [
-//                    [
-//                        'type' => 'img',
-//                        'url' => 'https://via.placeholder.com/850',
-//                        'desc' => 'Заглушка 850'
-//                    ],
-//                    [
-//                        'type' => 'img',
-//                        'url' => 'https://via.placeholder.com/630',
-//                        'desc' => 'Заглушка 630'
-//                    ],
-//                    [
-//                        'type' => 'img',
-//                        'url' => 'https://via.placeholder.com/1080x720',
-//                        'desc' => 'Заглушка 1080x720'
-//                    ],
-//                ]
-//            ]
-//        ];
+        if(!isset($_COOKIE['token']) || !isset($_COOKIE['username'])) {
+            setcookie('token', bin2hex(random_bytes(16)));
+        }
 
         $m = new Message();
         $messages = $m->getLast();
 
+        $u = new User();
+
+        foreach($messages as $key => $message) {
+            $messages[$key]['author'] = $u->find($message['author_id']);
+        }
+
         return $this->render('main', [
-            'users' => $users,
             'messages' => $messages
         ]);
     }
 
     public function test()
     {
-        $m = new Message();
-        $message = $m->update(89, [
-            'likes' => 12
-        ]);
-        var_dump($message);
+//        $u = new User();
+//
+//        $user = $u->create([
+//            'username' => 'testusername',
+//            'token' => 'testtoken'
+//        ]);
+//
+//        var_dump($user);
+
+        echo strlen(bin2hex(random_bytes(16)));
     }
 }
