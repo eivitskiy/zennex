@@ -15,7 +15,7 @@ ul, li {
 }
 
 /* список пользователей */
-.user-list {
+.users {
     background: lightgray;
     display: inline-block;
     height: 100vh;
@@ -27,13 +27,13 @@ ul, li {
     width: 15%;
 }
 
-.user-list li {
+.users li {
     list-style-type: none;
     display: block;
     padding: 5px 0 5px 15px;
 }
 
-.user-list li:hover {
+.users li:hover {
     background: darkgray;
 }
 
@@ -63,11 +63,18 @@ ul, li {
 }
 
 .message-history li:hover {
-    background: ghostwhite;
+    background: lightyellow;
 }
 
 .message-history span.message-title {
     font-weight: bold;
+}
+
+.message-history span.message-likes {
+    cursor: pointer;
+    float: right;
+    /*margin-right: 15px;*/
+    width: 100px;
 }
 
 .message-history span.message-content {
@@ -89,4 +96,9 @@ ul, li {
     position: absolute;
     right: 0;
     width: 100%;
+}
+
+#message-content {
+    margin-left: 15px;
+    width: 80%;
 }

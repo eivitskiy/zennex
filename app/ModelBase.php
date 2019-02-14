@@ -36,6 +36,25 @@ abstract class ModelBase
         return $this->db->insert($query);
     }
 
+    public function update($id, $data)
+    {
+        $updated_data = [];
+
+        foreach($data as $column => $value) {
+            $updated_data[] = "{$column} = '{$value}'";
+        }
+
+        $updated_data_str = implode(', ', $updated_data);
+
+        $query = "UPDATE {$this->table} SET {$updated_data_str} WHERE id = {$id}";
+
+        if($this->db->update($query)) {
+            return $this->find($id);
+        } else {
+            new \Exception('Что-то пошло не так');
+        }
+    }
+
     public function all()
     {
         return $this->db->select("SELECT * FROM {$this->table} WHERE deleted_at IS NULL");
@@ -43,6 +62,14 @@ abstract class ModelBase
 
     public function find($id)
     {
-        return $this->db->select("SELECT * FROM {$this->table} WHERE id = ?", [$id]);
+        $result = $this->db->select("SELECT * FROM {$this->table} WHERE id = ?", [$id]);
+        return array_shift($result);
+    }
+
+    public function getLast($order = 'created_at', $limit = 10, $sort = 'ASC')
+    {
+        $query = "SELECT * FROM (SELECT * FROM messages ORDER BY {$order} DESC LIMIT {$limit}) AS subquery ORDER BY {$order} {$sort}";
+
+        return $this->db->select($query);
     }
 }

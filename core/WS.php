@@ -10,7 +10,11 @@ class WS
 
     public $errNo, $errStr;     //ошибки при создании сокета
 
-    public $socket, $connections = [];
+    public $socket, $connections = [], $clients = [];
+
+    private $users = [];
+
+    private $connectionsInfo = [];
 
     public function __construct()
     {
@@ -22,18 +26,21 @@ class WS
         while (true) {
             //формируем массив прослушиваемых сокетов:
             $read = $this->connections;
-            $read [] = $this->socket;
+
+            $read[] = $this->socket;
+
             $write = $except = null;
 
             if (!stream_select($read, $write, $except, null)) {     //ожидаем сокеты доступные для чтения (без таймаута)
                 break;
             }
 
-            if (in_array($this->socket, $read)) {//есть новое соединение
+            if (in_array($this->socket, $read)) {   //есть новое соединение
                 //принимаем новое соединение и производим рукопожатие:
                 if (($connect = stream_socket_accept($this->socket, -1)) && $info = $this->handshake($connect)) {
                     $this->connections[] = $connect;    //добавляем его в список необходимых для обработки
-                    $this->onOpen($connect);     //вызываем пользовательский сценарий
+                    $this->connectionsInfo[intval($connect)] = $info;
+                    $this->onOpen($connect, $info);     //вызываем пользовательский сценарий
                 }
                 unset($read[array_search($this->socket, $read)]);
             }
@@ -42,9 +49,12 @@ class WS
                 $data = fread($connect, 100000);
 
                 if (!$data) {       //соединение было закрыто
+                    $this->onClose($connect);
+                    unset($this->connections[array_search($connect, $this->connections)]);      //удаляем подключение из списка
+                    unset($this->users[$this->connectionsInfo[intval($connect)]['Sec-WebSocket-Key']]); // удаляем пользователя из списка
                     fclose($connect);
-                    unset($this->connections[array_search($connect, $this->connections)]);
-                    $this->onClose();
+
+                    var_dump($this->users);
                     continue;
                 }
 
@@ -250,21 +260,69 @@ class WS
         return $decodedData;
     }
 
+    private function getCookieArray($cookieString)
+    {
+        $cookies = [];
+        foreach(explode('; ', $cookieString) as $str) {
+            $arr = array_values(explode('=', $str));
+            $cookies[$arr[0]] = $arr[1];
+        }
+
+        return $cookies;
+    }
+
     /*******************************************************************************************************************
     |* пользовательские сценарии:
     |******************************************************************************************************************/
-    private function onOpen($connect)
+    private function onOpen($connect, $info)
     {
-        echo "opened" . PHP_EOL;
-        $message = [
-            'type' => 'info',
-            'content' => 'Соединение установлено'
-        ];
-        fwrite($connect, $this->encode(json_encode($message)));
+        $cookies = $this->getCookieArray($info['Cookie']);
+
+        $username = $cookies['username'];
+
+        $this->users[$info['Sec-WebSocket-Key']] = $username;
+
+        foreach($this->connections as $connection) {
+            if($connection == $connect) {
+                fwrite($connection, $this->encode(json_encode([
+                    'type' => 'info',
+                    'content' => 'Соединение установлено'
+                ])));
+
+                foreach($this->users as $id => $user) {
+                    fwrite($connection, $this->encode(json_encode([
+                        'type' => 'addUser',
+                        'id' => $id,
+                        'username' => $user,
+                    ])));
+                }
+            } else {
+                fwrite($connection, $this->encode(json_encode([
+                    'type' => 'info',
+                    'content' => "Пользователь '{$username}' присоединился к чату"
+                ])));
+                // новый пользователь в чате
+                fwrite($connection, $this->encode(json_encode([
+                    'type' => 'addUser',
+                    'id' => $info['Sec-WebSocket-Key'],
+                    'username' => $username,
+                ])));
+            }
+        }
+
+        echo "opened for " . $info['Sec-WebSocket-Key'] . ' -> ' . $username . PHP_EOL;
     }
 
-    private function onClose()
+    private function onClose($connect)
     {
+        // пользователь ушел из чата
+        foreach($this->connections as $connection) {
+            fwrite($connection, $this->encode(json_encode([
+                'type' => 'removeUser',
+                'id' => $this->connectionsInfo[intval($connect)]['Sec-WebSocket-Key'],
+                'username' => $this->users[$this->connectionsInfo[intval($connect)]['Sec-WebSocket-Key']],
+            ])));
+        }
         echo "closed" . PHP_EOL;
     }
 
@@ -273,17 +331,49 @@ class WS
         $message = json_decode($this->decode($data)['payload']);
 
         if($message) {
-            $m = new Message();
-
-            $m->create([
-                'content' => $message->content,
-                'author' => $message->author
-            ]);
+            var_dump($message);
+            switch($message->type) {
+                case 'message':
+                    $this->message($message);
+                    break;
+                case 'like':
+                    $this->like($message);
+                    break;
+            }
+        } else {
+            fwrite($connect, $data);
         }
+    }
 
-//    var_dump($info);
+    private function message($message)
+    {
+        $m = new Message();
 
-//        var_dump($this->decode($data));
-        fwrite($connect, $data);
+        $m_id = $m->create([
+            'content' => $message->content,
+            'author' => $message->author
+        ]);
+
+        $message = $m->find($m_id);
+        $message['type'] = 'message';
+
+        foreach($this->connections as $connection) {
+            fwrite($connection, $this->encode(json_encode($message)));
+        }
+    }
+
+    private function like($message)
+    {
+        $m = new Message();
+
+        $msg = $m->find($message->message_id);
+        $message = $m->update($msg['id'], [
+            'likes' => ++$msg['likes']
+        ]);
+        $message['type'] = 'liked';
+
+        foreach($this->connections as $connection) {
+            fwrite($connection, $this->encode(json_encode($message)));
+        }
     }
 }

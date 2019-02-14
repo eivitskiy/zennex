@@ -29,16 +29,23 @@ class DB
         if (is_null($params)) {
             $stmt = $this->pdo->query($query);
 
-            return $stmt->fetchAll();
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
         }
         $stmt = $this->pdo->prepare($query);
         $stmt->execute($params);
 
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     public function insert($query)
     {
-        return (bool)$this->pdo->exec($query);
+        $this->pdo->query($query);
+
+        return $this->pdo->lastInsertId();
+    }
+
+    public function update($query)
+    {
+        return $this->pdo->query($query);
     }
 }

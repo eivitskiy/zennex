@@ -1,22 +1,23 @@
 <div class="content">
-    <div class="user-list">
-        <ul>
-            <?php foreach($users as $user): ?>
-                <li><?php echo $user['name'] ?></li>
-            <?php endforeach ?>
+    <div class="users">
+        <ul id="users-list">
+            <!-- здесь будут пользователи -->
         </ul>
     </div><!--
 
  --><div class="chat">
-        <div class="message-history">
-            <ul>
+        <div class="message-history" id="message-history-div">
+            <ul id="message-list">
                 <?php foreach($messages as $message): ?>
-                    <li>
+                    <li data-message-id="<?php echo $message['id'] ?>">
                         <span class="message-title">
                             <?php echo "{$message['created_at']} {$message['author']}:" ?>
                         </span>
                         <span class="message-content">
                             <?php echo "{$message['content']}" ?>
+                        </span>
+                        <span class="message-likes" data-message-id="<?php echo $message['id'] ?>">
+                            🖤 <small class="like-count"><?php echo $message['likes'] ?></small>
                         </span>
                         <?php if(isset($message['attachments'])): ?>
                         <span class="message-attachments">
@@ -43,6 +44,7 @@
         </div>
 
         <div class="message-input">
+            <input type="text" id="message-content" />
             <button id="message-send">Отправить сообщение</button>
         </div>
     </div>
