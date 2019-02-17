@@ -298,8 +298,6 @@ class WS
     {
         $cookies = $this->getCookieArray($info['Cookie']);
 
-        var_dump($cookies);
-
         if(!$this->checkUser($cookies)) {
             fwrite($connect, $this->encode(json_encode([
                 'type' => 'changeUsername'
@@ -417,8 +415,6 @@ class WS
             }
             $message['attach'][] = $attach;
         }
-
-        var_dump($message);
 
         foreach($this->connections as $connection) {
             fwrite($connection, $this->encode(json_encode($message)));

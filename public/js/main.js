@@ -96,8 +96,6 @@
                     }
                 }
 
-                console.log(message);
-
                 socket.send(JSON.stringify(message));
 
                 msgInput.value = null;

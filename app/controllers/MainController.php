@@ -105,18 +105,4 @@ class MainController extends ControllerBase
                 break;
         }
     }
-
-    public function test()
-    {
-//        $u = new User();
-//
-//        $user = $u->create([
-//            'username' => 'testusername',
-//            'token' => 'testtoken'
-//        ]);
-//
-//        var_dump($user);
-
-        echo strlen(bin2hex(random_bytes(16)));
-    }
 }
