@@ -26,16 +26,16 @@
                         <?php endif ?>
                         <?php if(isset($message['attachments'])): ?>
                         <span class="message-attachments">
-                            <?php foreach($message['attachments'] as $attachment): ?>
+                            <?php foreach($message['attach'] as $attachment): ?>
                                 <?php switch($attachment['type']) {
                                     case 'img':
-                                        echo "<img src='{$attachment['url']}' alt='{$attachment['desc']}'/>";
+                                        echo "<img src='/main/getAttachment/{$attachment['id']}' />";
                                         break;
                                     case 'link':
-                                        echo "<a href='{$attachment['url']}'>{$attachment['desc']}</a>";
+                                        echo "<a target='_blank' href='{$attachment['link']}'>{$attachment['link']}</a>";
                                         break;
                                     case 'youtube':
-                                        echo "ну а тут будет youtube ролик";
+                                        echo '<iframe width="320" src="'.$attachment['link'].'" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
                                         break;
                                 } ?>
                             <?php endforeach ?>
@@ -49,7 +49,15 @@
         </div>
 
         <div class="message-input">
+            <div id="imgPreview">
+            </div>
+            <div id="linkPreview">
+            </div>
+            <div id="youtubePreview">
+            </div>
+
             <input type="text" id="message-content" />
+            <input type='file' id="imgInput" accept="image/jpeg,image/png,image/gif" multiple />
             <button id="message-send">Отправить сообщение</button>
         </div>
     </div>

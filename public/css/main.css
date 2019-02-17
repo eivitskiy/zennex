@@ -52,7 +52,7 @@ ul, li {
 }
 
 .message-history {
-    height: calc(100vh - 30px);
+    height: calc(100vh - 40px);
     overflow-y: scroll;
 }
 
@@ -92,16 +92,43 @@ ul, li {
 }
 
 .message-attachments img {
-    max-height: 120px;
-    max-width: 240px;
+    max-height: 240px;
+    max-width: 320px;
+}
+
+.upload-image,
+.uploaded-youtube > img {
+    margin: 5px 0 5px 5px;
+    max-height: 90px;
+    max-width: 120px;
+}
+
+.upload-link {
+    display: block;
+    min-height: 20px;
+    margin: 5px 0 5px 5px;
+    overflow-x: hidden;
+}
+.uploaded-link > span,
+.uploaded-youtube > span {
+    cursor: pointer;
+    padding: 3px;
+    margin: 0 5px;
 }
 
 .message-input {
-    bottom: 0;
-    height: 30px;
+    bottom: 10px;
     position: absolute;
     right: 0;
     width: 100%;
+}
+
+.message-input #imgPreview,
+.message-input #linkPreview,
+.message-input #youtubePreview {
+    background: rgba(255,255,255,1);
+    margin-left: 15px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5); /* Параметры тени */
 }
 
 #message-content {

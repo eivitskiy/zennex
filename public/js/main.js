@@ -11,13 +11,101 @@
         socket.onmessage = messageReceived;
         socket.onclose = onClose;
 
-        document.getElementById("message-send").onclick = function () {
-            socket.send(JSON.stringify({
-                type: 'message',
-                content: document.getElementById("message-content").value
-            }));
+        document.getElementById('message-content').oninput = function() {
+            if(checkValidURL(this.value)) {
+                let youtubeID = checkYoutubeURL(this.value);
+                if(youtubeID) {
+                    let youtubePreview = document.getElementById("youtubePreview");
 
-            document.getElementById("message-content").value = null;
+                    let newDivYoutube = document.createElement('div');
+                    newDivYoutube.className = 'uploaded-youtube';
+
+                    let newRemoveBtn = document.createElement('span');
+                    newRemoveBtn.innerHTML = 'x';
+                    newRemoveBtn.onclick = uploadedLinkRemove;
+
+                    let newYoutube = document.createElement("img");
+                    newYoutube.setAttribute('src', 'https://img.youtube.com/vi/'+youtubeID+'/0.jpg');
+                    newYoutube.setAttribute('data-id', youtubeID);
+                    newYoutube.innerHTML = this.value;
+
+                    newDivYoutube.appendChild(newRemoveBtn);
+                    newDivYoutube.appendChild(newYoutube);
+
+                    youtubePreview.appendChild(newDivYoutube);
+                } else {
+                    let linkPreview = document.getElementById("linkPreview");
+
+                    let newDivLink = document.createElement('div');
+                    newDivLink.className = 'uploaded-link';
+
+                    let newRemoveBtn = document.createElement('span');
+                    newRemoveBtn.innerHTML = 'x';
+                    newRemoveBtn.onclick = uploadedLinkRemove;
+
+                    let newLink = document.createElement("a");
+                    newLink.setAttribute('href', this.value);
+                    newLink.setAttribute('target', '_blank');
+                    newLink.innerHTML = this.value;
+
+                    newDivLink.appendChild(newRemoveBtn);
+                    newDivLink.appendChild(newLink);
+
+                    linkPreview.appendChild(newDivLink);
+                }
+            }
+        };
+
+        document.getElementById("message-send").onclick = function () {
+
+            let msgInput = document.getElementById('message-content');
+            let imgInput = document.getElementById('imgInput');
+            let linkInput = document.querySelectorAll('.uploaded-link a');
+            let youtubeInput = document.querySelectorAll('.uploaded-youtube img');
+
+            if(msgInput.value.length > 0 || imgInput.files.length > 0 || linkInput.length > 0 || youtubeInput.length > 0) {
+                let message = {
+                    type: 'message',
+                    content: msgInput.value
+                };
+
+                if(imgInput.files.length > 0 || linkInput.length > 0 || youtubeInput.length > 0) {
+                    let formData = new FormData();
+
+                    for(let i = 0; i < imgInput.files.length; i++) {
+                        formData.append('img_'+i, imgInput.files[i]);
+                    }
+
+                    for(let i = 0; i < linkInput.length; i++) {
+                        formData.append('link['+i+']', linkInput[i].getAttribute('href'));
+                    }
+
+                    for(let i = 0; i < youtubeInput.length; i++) {
+                        formData.append('youtube['+i+']', 'https://www.youtube.com/embed/'+youtubeInput[i].getAttribute('data-id'));
+                    }
+
+                    let xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/main/attachmentsUpload', false);
+                    xhr.send(formData);
+
+                    if (xhr.status !== 200) {
+                        alert( xhr.status + ': ' + xhr.statusText );
+                        return ;
+                    } else {
+                        message.attachments = xhr.responseText;
+                    }
+                }
+
+                console.log(message);
+
+                socket.send(JSON.stringify(message));
+
+                msgInput.value = null;
+                imgInput.value = null;
+                document.getElementById('imgPreview').innerHTML = null;
+                document.getElementById('linkPreview').innerHTML = null;
+                document.getElementById('youtubePreview').innerHTML = null;
+            }
         };
 
 
@@ -30,6 +118,10 @@
         for(let i = 0; i < remove_elements.length; i++) {
             remove_elements[i].onclick = removeMsg;
         }
+
+        document.getElementById("imgInput").onchange = function(e) {
+            readURL(this);
+        };
     };
 
     function getCookie(name) {
@@ -52,6 +144,10 @@
     function scrollMessageHistoryDiv(){
         let div = document.getElementById("message-history-div");
         div.scrollTop = div.clientHeight;
+    }
+
+    function uploadedLinkRemove() {
+        this.parentElement.remove();
     }
 
     function newMessage(message) {
@@ -79,17 +175,40 @@
         li.appendChild(span_content);
         li.appendChild(span_likes);
 
-        if(message.author.username == getCookie('username')) {
+        if(message.author.username === getCookie('username')) {
             span_remove.className += 'message-remove';
             span_remove.innerHTML = '❌';
             span_remove.onclick = removeMsg;
             li.appendChild(span_remove);
         }
 
-        if(message.attachments !== undefined) {
-            span_attachments.className += 'message-attachments';
-            span_attachments.innerHTML = 'здесь будут прикрепляшки';
-            li.appendChild(span_attachments);
+        if(message['attach'] !== undefined) {
+            for(let i = 0; i < message['attach'].length; i++) {
+                span_attachments.className += 'message-attachments';
+                switch(message['attach'][i]['type']) {
+                    case 'img':
+                        let attachImg = document.createElement('img');
+                        attachImg.setAttribute('src', '/main/getAttachment/'+message['attach'][i]['id']);
+                        span_attachments.appendChild(attachImg);
+                        break;
+                    case 'link':
+                        let attachLink = document.createElement('a');
+                        attachLink.setAttribute('target', '_blank');
+                        attachLink.setAttribute('href', message['attach'][i]['link']);
+                        attachLink.innerHTML = message['attach'][i]['link'];
+                        span_attachments.appendChild(attachLink);
+                        break;
+                    case 'youtube':
+                        let attachYoutube = document.createElement('iframe');
+                        attachYoutube.setAttribute('width', '320');
+                        attachYoutube.setAttribute('src', message['attach'][i]['link']);
+                        attachYoutube.setAttribute('frameborder', '0');
+                        attachYoutube.setAttribute('allow', 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture');
+                        attachYoutube.setAttribute('allowfullscreen', true);
+                        span_attachments.appendChild(attachYoutube);
+                }
+                li.appendChild(span_attachments);
+            }
         }
 
         ul.appendChild(li);
@@ -179,7 +298,47 @@
     }
 
     function onClose(e) {
-        console.log('соединение закрылось', e);
+        // console.log('соединение закрылось', e);
+    }
+
+    function readURL(input) {
+        if (input.files && input.files[0]) {
+            let imgPreview = document.getElementById("imgPreview");
+            imgPreview.innerHTML = '';
+            for (let i = 0; i < input.files.length; i++) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    let newImg = document.createElement("img");
+                    newImg.className = 'upload-image';
+                    newImg.setAttribute('src', e.target.result);
+                    imgPreview.appendChild(newImg);
+                };
+
+                reader.readAsDataURL(input.files[i]);
+            }
+        }
+    }
+
+    function checkValidURL(str) {
+        let pattern = new RegExp(/^(?:(?:https?|ftp):\/\/)(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:\/\S*)?$/);
+        if(!pattern.test(str)) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    function checkYoutubeURL(str) {
+        if (str !== undefined || str !== '') {
+            let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|\?v=)([^#\&\?]*).*/;
+            let match = str.match(regExp);
+            if (match && match[2].length === 11) {
+                return match[2];
+            }
+            else {
+                return false;
+            }
+        }
     }
 
 

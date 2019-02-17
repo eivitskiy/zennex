@@ -13,8 +13,6 @@ class User extends ModelBase
         $query = "SELECT * FROM {$this->table} WHERE username = ?";
         $result = $this->db->select($query, [$username]);
 
-        var_dump($result);
-
         /**
          * если пользователя с username нет, то возвращаем null
          * если пользователь есть, но токен не соответствует - false

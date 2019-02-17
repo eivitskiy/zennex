@@ -2,6 +2,7 @@
 
 namespace core;
 
+use app\models\Attachment;
 use app\models\Message;
 use app\models\User;
 
@@ -47,7 +48,7 @@ class WS
             }
 
             foreach ($read as $connect) {   //обрабатываем все соединения
-                $data = fread($connect, 100000);
+                $data = fread($connect, 10000000);
 
                 if (!$data) {       //соединение было закрыто
                     $this->onClose($connect);
@@ -274,11 +275,7 @@ class WS
     {
         $u = new User();
 
-        var_dump($cookies);
-
         $status = $u->existsUser($cookies['username'], $cookies['token']);
-
-        var_dump($status);
 
         if($status === null) {
             $user_id = $u->create([
@@ -300,6 +297,8 @@ class WS
     private function onOpen($connect, $info)
     {
         $cookies = $this->getCookieArray($info['Cookie']);
+
+        var_dump($cookies);
 
         if(!$this->checkUser($cookies)) {
             fwrite($connect, $this->encode(json_encode([
@@ -355,8 +354,12 @@ class WS
         echo "closed" . PHP_EOL;
     }
 
+    private $countMessages = 0;
+
     private function onMessage($connect, $data)
     {
+        echo ++$this->countMessages . " сообщение" . PHP_EOL;
+
         $message = json_decode($this->decode($data)['payload']);
 
         $cookies = $this->getCookieArray($this->connectionsInfo[intval($connect)]['Cookie']);
@@ -379,7 +382,6 @@ class WS
                     $this->like($message);
                     break;
                 case 'remove':
-
                     $this->remove($message, $user);
                     break;
             }
@@ -391,15 +393,32 @@ class WS
     private function message($message, $user)
     {
         $m = new Message();
+        $a = new Attachment();
 
-        $m_id = $m->create([
+        $newMsg = [
             'content' => $message->content,
             'author_id' => $user['id']
-        ]);
+        ];
+
+        if(isset($message->attachments)) {
+            $newMsg['attachments'] = $message->attachments;
+        }
+
+        $m_id = $m->create($newMsg);
 
         $message = $m->find($m_id);
         $message['author'] = $user;
         $message['type'] = 'message';
+
+        foreach(json_decode($message['attachments']) as $attachment_id) {
+            $attach = $a->find($attachment_id);
+            if($attach['type'] == 'img') {
+                $attach['file'] = null; //через вебсокеты двоичные данных файлов не передаём, иначе упадёт
+            }
+            $message['attach'][] = $attach;
+        }
+
+        var_dump($message);
 
         foreach($this->connections as $connection) {
             fwrite($connection, $this->encode(json_encode($message)));
